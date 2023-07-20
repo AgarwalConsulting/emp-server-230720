@@ -6,28 +6,28 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+
+	"algogrit.com/emp-server/employees/repository"
+	"algogrit.com/emp-server/entities"
 )
 
-type Employee struct {
-	ID         int    `json:"-"`
-	Name       string `json:"name"`
-	Department string `json:"speciality"`
-	ProjectID  int    `json:"project"`
-}
-
-var employees = []Employee{
-	{1, "Gaurav", "LnD", 10001},
-	{2, "Thamim", "Cloud", 20001},
-	{3, "Shagun", "SRE", 20002},
-}
+var empRepo = repository.NewInMem()
 
 func EmployeesIndexHandler(w http.ResponseWriter, r *http.Request) {
+	emps, err := empRepo.ListAll()
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintln(w, err)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(employees)
+	json.NewEncoder(w).Encode(emps)
 }
 
 func EmployeeCreateHandler(w http.ResponseWriter, r *http.Request) {
-	var newEmp Employee
+	var newEmp entities.Employee
 	err := json.NewDecoder(r.Body).Decode(&newEmp)
 
 	if err != nil {
@@ -36,12 +36,16 @@ func EmployeeCreateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newEmp.ID = len(employees) + 1
+	createdEmp, err := empRepo.Save(newEmp)
 
-	employees = append(employees, newEmp)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintln(w, err)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(newEmp)
+	json.NewEncoder(w).Encode(createdEmp)
 }
 
 func EmployeesHandler(w http.ResponseWriter, req *http.Request) {
