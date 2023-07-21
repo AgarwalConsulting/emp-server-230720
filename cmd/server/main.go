@@ -8,13 +8,15 @@ import (
 	"github.com/gorilla/mux"
 
 	"algogrit.com/emp-server/employees/repository"
+	"algogrit.com/emp-server/employees/service"
 	"algogrit.com/emp-server/entities"
 )
 
 var empRepo = repository.NewInMem()
+var empSvc = service.NewV1(empRepo)
 
 func EmployeesIndexHandler(w http.ResponseWriter, r *http.Request) {
-	emps, err := empRepo.ListAll()
+	emps, err := empSvc.Index()
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -36,7 +38,7 @@ func EmployeeCreateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	createdEmp, err := empRepo.Save(newEmp)
+	createdEmp, err := empSvc.Create(newEmp)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -70,5 +72,5 @@ func main() {
 	r.HandleFunc("/employees", EmployeesIndexHandler).Methods("GET")
 	r.HandleFunc("/employees", EmployeeCreateHandler).Methods("POST")
 
-	http.ListenAndServe("localhost:8000", r)
+	http.ListenAndServe(":8000", r)
 }
